@@ -89,6 +89,7 @@ CREATE TABLE `users` (
   `date_join` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `last_sibux_award_on` date DEFAULT NULL,
   `last_online` datetime DEFAULT NULL,
+  `description` text NOT NULL DEFAULT 'I am player of SKIBLOX',
   `chat_msg_mod3` tinyint(3) UNSIGNED NOT NULL DEFAULT '0',
   `is_admin` tinyint(1) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -97,8 +98,14 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `sibux`, `tixs`, `date_join`, `last_sibux_award_on`, `last_online`, `chat_msg_mod3`, `is_admin`) VALUES
-(1, 'SKIBLOX', 'SKIBLOX@gmail.com', '$2y$10$g60LlzWP80y6N9S3cL4fv.78d8zZzJsaW4C8PNPPEUIJpQuJJwg8i', 1000001700, 1000000703, '2016-07-08 00:00:00', '2025-08-24', '2025-08-24 01:42:53', 2, 1);
+INSERT INTO `users` (
+  `id`, `username`, `email`, `password_hash`, `sibux`, `tixs`, `date_join`,
+  `last_sibux_award_on`, `last_online`, `description`, `chat_msg_mod3`, `is_admin`
+) VALUES (
+  1, 'SKIBLOX', 'SKIBLOX@gmail.com', '$2y$10$g60LlzWP80y6N9S3cL4fv.78d8zZzJsaW4C8PNPPEUIJpQuJJwg8i',
+  1000001700, 1000000703, '2016-07-08 00:00:00', '2025-08-24', '2025-08-24 01:42:53',
+  'I am player of SKIBLOX', 2, 1
+);
 
 --
 -- Indexes for dumped tables
