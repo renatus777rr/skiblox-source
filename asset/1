@@ -1,5 +1,5 @@
 -- Creates all neccessary scripts for the gui on initial load, everything except build tools
--- Created by Ben T. 10/29/10
+-- who need this? eheh hehh hehe
 -- Please note that these are loaded in a specific order to diminish errors/perceived load time by user
 
 local scriptContext = game:GetService("ScriptContext")
@@ -103,4 +103,5 @@ if UserSettings().GameSettings:InStudioMode() then
 		end
 		UserInputService.Changed:connect(onVREnabled)
 	end)
+
 end
