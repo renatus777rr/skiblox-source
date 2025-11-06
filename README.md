@@ -36,7 +36,7 @@ Thats all troubleshooting i had.
 
 (BTW AI commented all code, for just knowing. bcs i was lazy to comment this shit. if you see something like ai edited, fix it or just make it normal as people do. XD)
 
-
+visit skiblox now! skibloxrev.rf.gd
 
 
 
