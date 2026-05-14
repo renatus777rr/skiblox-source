@@ -22,9 +22,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username'] ?? '');
     $email    = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
+    $csrfToken = $_POST['csrf_token'] ?? '';
 
-    // Basic validations
-    if ($username === '' || $email === '' || $password === '') {
+    if (!validate_csrf($csrfToken)) {
+        $err = 'Invalid request. Please refresh and try again.';
+    } elseif ($username === '' || $email === '' || $password === '') {
         $err = 'Please fill in all fields.';
     } elseif (!preg_match('/^[A-Za-z0-9_\.]{3,32}$/', $username)) {
         $err = 'Username must be 3-32 chars, alphanumeric, underscore, or dot.';
@@ -47,15 +49,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             // Create user
             $hash = password_hash($password, PASSWORD_DEFAULT);
+            $cookieHash = generate_account_cookie_hash();
 
             try {
                 $ins = $pdo->prepare('
-                    INSERT INTO users (username, email, password_hash, sibux, tixs)
-                    VALUES (?, ?, ?, 0, 0)
+                    INSERT INTO users (username, email, password_hash, sibux, tixs, account_cookie_hash)
+                    VALUES (?, ?, ?, 0, 0, ?)
                 ');
-                $ins->execute([$username, $email, $hash]);
+                $ins->execute([$username, $email, $hash, $cookieHash]);
 
+                session_regenerate_id(true);
                 $_SESSION['uid'] = (int)$pdo->lastInsertId();
+                set_account_cookie($cookieHash);
                 redirect('home.php');
             } catch (PDOException $ex) {
                 // Handle race conditions with unique constraints gracefully
@@ -108,6 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <form method="post" class="input" autocomplete="off">
+          <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
           <input type="text" name="username" placeholder="Username" maxlength="32" required
                  value="<?= htmlspecialchars($_POST['username'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
           <input type="email" name="email" placeholder="Email" required
