@@ -33,8 +33,11 @@ $error  = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
+    $csrfToken = $_POST['csrf_token'] ?? '';
 
-    if ($action === 'ban') {
+    if (!validate_csrf($csrfToken)) {
+        $error = 'Invalid request. Please refresh and try again.';
+    } elseif ($action === 'ban') {
         $uname  = trim($_POST['username'] ?? '');
         $reason = trim($_POST['reason'] ?? '');
 
@@ -141,6 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <details>
         <summary><span class="btn">Ban user</span></summary>
         <form method="post" style="margin-top:12px;">
+          <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
           <input type="hidden" name="action" value="ban">
           <div class="field">
             <label>Username</label>
@@ -159,6 +163,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <details>
         <summary><span class="btn secondary">Unban user</span></summary>
         <form method="post" style="margin-top:12px;">
+          <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
           <input type="hidden" name="action" value="unban">
           <div class="field">
             <label>Username</label>
@@ -172,6 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="card">
       <h2 style="margin:0 0 8px;">Set Banner</h2>
       <form method="post">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
         <input type="hidden" name="action" value="banner">
         <div class="field">
           <label>Set Message</label>
