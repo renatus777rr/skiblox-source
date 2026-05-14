@@ -1,15 +1,103 @@
 <?php
+declare(strict_types=1);
 // common.php
+ini_set('session.use_strict_mode', '1');
+
 session_name('SKIBLOXSESSID');
-session_start();
+$secureCookie = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['SERVER_PORT'] ?? '') === '443';
+session_set_cookie_params([
+  'lifetime' => 0,
+  'path' => '/',
+  'secure' => $secureCookie,
+  'httponly' => true,
+  'samesite' => 'Lax',
+]);
+
+if (session_status() === PHP_SESSION_NONE) {
+  session_start();
+}
+
+send_security_headers();
 require_once __DIR__ . '/db.php';
 
 date_default_timezone_set('Europe/Minsk');
 
-function redirect($path) {
-  header('Location: ' . $path);
+function redirect(string $path): void {
+  $path = trim($path);
+  if (!preg_match('~^https?://~i', $path)) {
+    $path = '/' . ltrim($path, '/');
+  }
+  $safePath = str_replace(["\r", "\n"], '', $path);
+  header('Location: ' . $safePath);
   exit;
 }
+
+function send_security_headers(): void {
+  if (headers_sent()) {
+    return;
+  }
+  header('X-Frame-Options: DENY');
+  header('X-Content-Type-Options: nosniff');
+  header('Referrer-Policy: strict-origin-when-cross-origin');
+  header('Permissions-Policy: geolocation=(), microphone=(), camera=(), fullscreen=()');
+  header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; frame-ancestors 'none'; base-uri 'self';");
+}
+
+function csrf_token(): string {
+  if (empty($_SESSION['csrf_token']) || !is_string($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+  }
+  return $_SESSION['csrf_token'];
+}
+
+function validate_csrf(string $token): bool {
+  return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+}
+
+function generate_account_cookie_hash(): string {
+  return bin2hex(random_bytes(32));
+}
+
+function set_account_cookie(string $cookieHash): void {
+  if (headers_sent()) {
+    return;
+  }
+  $secureCookie = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['SERVER_PORT'] ?? '') === '443';
+  setcookie(
+    '_DO_NOT_SHARE_THIS_COOKIE_',
+    $cookieHash,
+    [
+      'expires' => 0,
+      'path' => '/',
+      'secure' => $secureCookie,
+      'httponly' => true,
+      'samesite' => 'Lax',
+    ]
+  );
+}
+
+function get_account_cookie_from_request(): ?string {
+  return $_COOKIE['_DO_NOT_SHARE_THIS_COOKIE_'] ?? null;
+}
+
+function verify_account_cookie(PDO $pdo, int $userId): bool {
+  $cookieFromRequest = get_account_cookie_from_request();
+  if (!$cookieFromRequest) {
+    return false;
+  }
+  
+  $stmt = $pdo->prepare('SELECT account_cookie_hash FROM users WHERE id = ? LIMIT 1');
+  $stmt->execute([$userId]);
+  $user = $stmt->fetch(PDO::FETCH_ASSOC);
+  
+  if (!$user || !$user['account_cookie_hash']) {
+    return false;
+  }
+  
+  return hash_equals($user['account_cookie_hash'], $cookieFromRequest);
+}
+
+
 
 function render_maintenance_page(string $text = 'Maintenance, Best Music: Dave Blunts - The Cup') {
     if (!headers_sent()) {
@@ -68,7 +156,9 @@ function get_config($pdo) {
 }
 
 function current_user(PDO $pdo) {
-  if (empty($_SESSION['uid'])) return null;
+  if (empty($_SESSION['uid']) || !is_numeric($_SESSION['uid'])) {
+    return null;
+  }
 
   static $cache = null;
   static $hasLastOnline = null;
