@@ -1,5 +1,6 @@
 <?php
 // chat.php
+declare(strict_types=1);
 require_once __DIR__ . '/common.php';
 
 $user = current_user($pdo);
@@ -124,8 +125,11 @@ function save_chat_file(array $file, string &$err): array {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $msg = isset($_POST['message']) ? trim($_POST['message']) : '';
+  $csrfToken = $_POST['csrf_token'] ?? '';
 
-  if ($msg !== '' && strlen($msg) > 500) {
+  if (!validate_csrf($csrfToken)) {
+    $err = 'Invalid request. Please refresh and try again.';
+  } elseif ($msg !== '' && mb_strlen($msg) > 500) {
     $err = 'Message must be between 1 and 500 characters.';
   }
 
@@ -366,6 +370,7 @@ function h($s){ return htmlspecialchars($s, ENT_QUOTES, 'UTF-8'); }
 
     <!-- enctype is required for file uploads -->
     <form class="composer" method="post" enctype="multipart/form-data" autocomplete="off">
+      <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
       <input type="text" name="message" placeholder="Type a message..." maxlength="500">
       <div class="right">
         <input type="file" name="file">
