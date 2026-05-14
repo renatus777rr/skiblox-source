@@ -9,21 +9,35 @@ maintenance_gate($pdo, $user, false);
 $cfg = get_config($pdo);
 
 $err = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
+    $csrfToken = $_POST['csrf_token'] ?? '';
 
-    if ($username === '' || $password === '') {
+    if (!validate_csrf($csrfToken)) {
+        $err = 'Invalid request. Please refresh and try again.';
+    } elseif ($username === '' || $password === '') {
         $err = 'Please enter username and password.';
     } else {
-        $stmt = $pdo->prepare('SELECT id, password_hash FROM users WHERE username = ? LIMIT 1');
+        $stmt = $pdo->prepare('SELECT id, password_hash, account_cookie_hash FROM users WHERE username = ? LIMIT 1');
         $stmt->execute([$username]);
         $foundUser = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$foundUser || !password_verify($password, $foundUser['password_hash'])) {
             $err = 'Invalid credentials.';
         } else {
+            session_regenerate_id(true);
             $_SESSION['uid'] = (int)$foundUser['id'];
+            
+            // Handle account cookie: generate if missing
+            $cookieHash = $foundUser['account_cookie_hash'];
+            if (!$cookieHash) {
+                $cookieHash = generate_account_cookie_hash();
+                $stmt = $pdo->prepare('UPDATE users SET account_cookie_hash = ? WHERE id = ?');
+                $stmt->execute([$cookieHash, (int)$foundUser['id']]);
+            }
+            
+            set_account_cookie($cookieHash);
             redirect('home.php');
         }
     }
@@ -69,6 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <?php endif; ?>
 
       <form method="post" class="input" autocomplete="off">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
         <input type="text" name="username" placeholder="Username" required
                value="<?= htmlspecialchars($_POST['username'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
         <input type="password" name="password" placeholder="Password" required>
