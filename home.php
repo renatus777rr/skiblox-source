@@ -1,5 +1,6 @@
 <?php
 // home.php
+declare(strict_types=1);
 require_once __DIR__ . '/common.php';
 
 $user = current_user($pdo);
@@ -9,26 +10,7 @@ if (!$user) {
   redirect('login');
 }
 
-// Ban check
-$stmt = $pdo->prepare("SELECT reason FROM bans WHERE user_id = ? AND active = 1 LIMIT 1");
-$stmt->execute([$user['id']]);
-$ban = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if ($ban) {
-  echo '<div style="
-    background-color:#ff4f4f;
-    color:#fff;
-    font-weight:bold;
-    text-align:center;
-    padding:10px;
-    border-bottom:2px solid #b91c1c;
-    font-family:Arial,sans-serif;
-  ">
-    Your account is currently banned. Reason: ' . htmlspecialchars($ban['reason'], ENT_QUOTES, 'UTF-8') . '
-  </div>';
-}
-
-include 'topbar.php';
+include __DIR__ . '/topbar.php';
 
 $cfg = get_config($pdo);
 if (!empty($cfg['banner_enabled']) && !empty($cfg['banner_message'])) {
