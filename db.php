@@ -5,13 +5,14 @@ declare(strict_types=1);
 $DB_HOST = 'localhost';
 $DB_NAME = 'skiblox';
 $DB_USER = 'root';
-$DB_PASS = 'r6i1P215*'; // change in prod
+$DB_PASS = '1234testpass'; // change in prod
 
 $dsn = "mysql:host=$DB_HOST;dbname=$DB_NAME;charset=utf8mb4";
 $options = [
   PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
   PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
   PDO::ATTR_EMULATE_PREPARES => false,
+  PDO::MYSQL_ATTR_MULTI_STATEMENTS => false,
 ];
 
 try {
