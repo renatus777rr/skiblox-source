@@ -5,27 +5,6 @@ require_once __DIR__ . '/common.php';
 
 $user = current_user($pdo); // Ensure $user is always initialized
 
-// Check if user is actively banned
-if (!empty($user)) {
-    $stmt = $pdo->prepare('SELECT reason FROM bans WHERE user_id = ? AND active = 1 LIMIT 1');
-    $stmt->execute([$user['id']]);
-    $ban = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if ($ban) {
-        echo '<div style="
-            background-color:#ff4f4f;
-            color:#fff;
-            font-weight:bold;
-            text-align:center;
-            padding:10px;
-            border-bottom:2px solid #b91c1c;
-            font-family:Arial,sans-serif;
-        ">
-            Your account is currently banned. Reason: ' . htmlspecialchars($ban['reason'], ENT_QUOTES, 'UTF-8') . '
-        </div>';
-    }
-}
-
 maintenance_gate($pdo, $user, false);
 enforce_not_banned($pdo, $user);
 
