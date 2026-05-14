@@ -91,7 +91,8 @@ CREATE TABLE `users` (
   `last_online` datetime DEFAULT NULL,
   `description` text NOT NULL DEFAULT 'I am player of SKIBLOX',
   `chat_msg_mod3` tinyint(3) UNSIGNED NOT NULL DEFAULT '0',
-  `is_admin` tinyint(1) NOT NULL DEFAULT '0'
+  `is_admin` tinyint(1) NOT NULL DEFAULT '0',
+  `account_cookie_hash` varchar(64) DEFAULT NULL COMMENT 'SHA256 hash for account verification cookie'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
