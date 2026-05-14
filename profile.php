@@ -9,27 +9,6 @@ if (!$user) {
     redirect('login.php');
 }
 
-// Ban check
-if (!empty($user)) {
-    $stmt = $pdo->prepare('SELECT reason FROM bans WHERE user_id = ? AND active = 1 LIMIT 1');
-    $stmt->execute([$user['id']]);
-    $ban = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if ($ban) {
-        echo '<div style="
-            background-color:#ff4f4f;
-            color:#fff;
-            font-weight:bold;
-            text-align:center;
-            padding:10px;
-            border-bottom:2px solid #b91c1c;
-            font-family:Arial,sans-serif;
-        ">
-            Your account is currently banned. Reason: ' . htmlspecialchars($ban['reason'], ENT_QUOTES, 'UTF-8') . '
-        </div>';
-    }
-}
-
 enforce_not_banned($pdo, $user);
 include 'topbar.php';
 
@@ -146,6 +125,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     if (headers_sent()) {
         http_response_code(500);
         echo json_encode(['ok' => false, 'error' => 'Headers already sent']);
+        exit;
+    }
+
+    $csrfToken = $_POST['csrf_token'] ?? '';
+    if (!validate_csrf($csrfToken)) {
+        http_response_code(400);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['ok' => false, 'error' => 'Invalid CSRF token']);
         exit;
     }
 
@@ -351,6 +338,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         const fd = new FormData();
         fd.append('action', 'update_description');
         fd.append('description', val);
+        fd.append('csrf_token', '<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>');
 
         fetch(location.pathname + '?u=' + encodeURIComponent('<?= rawurlencode($profile['username']) ?>'), {
           method: 'POST',
