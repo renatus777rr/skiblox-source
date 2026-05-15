@@ -8,7 +8,7 @@ https://www.apachefriends.org/ Download thing named XAMMP, it's an webserver wit
 # 2. Run up.
 So, you run up as admin control panel.
 # 3. Database setup (most hardest for new guys)
-You go to localhost/phpmyadmin, then you create db with name skiblox. and just import the .sql in the phpmyadmin. Should be done!
+You go to localhost/phpmyadmin, then you create db with name skiblox. and just import the .sql in the phpmyadmin. Should be Done! You setted up the site. Go to http://localhost/ or localhost. You can now see the login. Enter SKIBLOX in the username, and password to skiblox. Then login. You in the owner account!
 # 5. How to make admin and not admin?
 Alright go to localhost/phpmyadmin and select database skiblox and you see under database skiblox the tables. select users table. You see this. <img width="1104" height="401" alt="Снимок экрана 2025-08-24 014144" src="https://github.com/user-attachments/assets/d13746ca-904d-4771-9a7b-563d04b4ab9f" /> Select the user by pressing Edit. Scroll down and then you should see <img width="651" height="43" alt="image" src="https://github.com/user-attachments/assets/47b9aa70-e29f-4f3e-b45a-a15a303e011d" /> Then if value 1, and you want un-admin then set it to 0 and save. If it value 0 then set it to 1, to set to admin and save. Done! Now you set up fully.
 
