@@ -10,6 +10,8 @@ if (!$user) {
   redirect('login');
 }
 
+enforce_not_banned($pdo, $user);
+
 include __DIR__ . '/topbar.php';
 
 $cfg = get_config($pdo);
