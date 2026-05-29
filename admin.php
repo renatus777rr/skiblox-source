@@ -15,6 +15,8 @@ if (!$user) {
     exit('Forbidden: Not authenticated');
 }
 
+enforce_not_banned($pdo, $user);
+
 // Enforce admin-only access (users.is_admin must be 1)
 $stmt = $pdo->prepare('SELECT is_admin FROM users WHERE id = ? LIMIT 1');
 $stmt->execute([(int)$user['id']]);
