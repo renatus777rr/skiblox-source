@@ -12,6 +12,8 @@ if (!$user) {
     redirect('login');
 }
 
+enforce_not_banned($pdo, $user);
+
 $cfg = get_config($pdo);
 
 // Pull all users; tweak ORDER BY as needed
