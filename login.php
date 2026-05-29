@@ -6,39 +6,40 @@ require_once __DIR__ . '/common.php';
 $user = current_user($pdo);
 maintenance_gate($pdo, $user, false);
 
-$cfg = get_config($pdo);
+if ($user) {
+    redirect('/home');
+}
 
+$cfg = get_config($pdo);
 $err = '';
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = trim($_POST['username'] ?? '');
-    $password = $_POST['password'] ?? '';
-    $csrfToken = $_POST['csrf_token'] ?? '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = trim((string)($_POST['username'] ?? ''));
+    $password = (string)($_POST['password'] ?? '');
+    $csrfToken = (string)($_POST['csrf_token'] ?? '');
 
     if (!validate_csrf($csrfToken)) {
         $err = 'Invalid request. Please refresh and try again.';
     } elseif ($username === '' || $password === '') {
         $err = 'Please enter username and password.';
+    } elseif (!valid_username($username)) {
+        $err = 'Invalid username format.';
     } else {
-        $stmt = $pdo->prepare('SELECT id, password_hash, account_cookie_hash FROM users WHERE username = ? LIMIT 1');
+        $stmt = $pdo->prepare('SELECT id, password_hash FROM users WHERE username = ? LIMIT 1');
         $stmt->execute([$username]);
         $foundUser = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$foundUser || !password_verify($password, $foundUser['password_hash'])) {
+            usleep(200000);
             $err = 'Invalid credentials.';
         } else {
-            session_regenerate_id(true);
-            $_SESSION['uid'] = (int)$foundUser['id'];
-            
-            // Handle account cookie: generate if missing
-            $cookieHash = $foundUser['account_cookie_hash'];
-            if (!$cookieHash) {
-                $cookieHash = generate_account_cookie_hash();
-                $stmt = $pdo->prepare('UPDATE users SET account_cookie_hash = ? WHERE id = ?');
-                $stmt->execute([$cookieHash, (int)$foundUser['id']]);
+            if (password_needs_rehash($foundUser['password_hash'], PASSWORD_DEFAULT)) {
+                $stmt = $pdo->prepare('UPDATE users SET password_hash = ? WHERE id = ?');
+                $stmt->execute([password_hash($password, PASSWORD_DEFAULT), (int)$foundUser['id']]);
             }
-            
-            set_account_cookie($cookieHash);
-            redirect('home.php');
+
+            login_user($pdo, (int)$foundUser['id']);
+            redirect('/home');
         }
     }
 }
