@@ -16,24 +16,29 @@ if (!empty($cfg['maintenance_enabled'])) {
     exit;
 }
 
+if ($user) {
+    redirect('/home');
+}
+
 $err = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = trim($_POST['username'] ?? '');
-    $email    = trim($_POST['email'] ?? '');
-    $password = $_POST['password'] ?? '';
-    $csrfToken = $_POST['csrf_token'] ?? '';
+    $username = trim((string)($_POST['username'] ?? ''));
+    $email = trim((string)($_POST['email'] ?? ''));
+    $password = (string)($_POST['password'] ?? '');
+    $csrfToken = (string)($_POST['csrf_token'] ?? '');
 
     if (!validate_csrf($csrfToken)) {
         $err = 'Invalid request. Please refresh and try again.';
     } elseif ($username === '' || $email === '' || $password === '') {
         $err = 'Please fill in all fields.';
-    } elseif (!preg_match('/^[A-Za-z0-9_\.]{3,32}$/', $username)) {
+    } elseif (!valid_username($username)) {
         $err = 'Username must be 3-32 chars, alphanumeric, underscore, or dot.';
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    } elseif (!valid_email($email)) {
         $err = 'Invalid email.';
+    } elseif (!valid_password($password)) {
+        $err = 'Password must be at least 10 characters.';
     } else {
-        // Uniqueness checks (separate to avoid LIMIT 1 masking the other field)
         $uStmt = $pdo->prepare('SELECT 1 FROM users WHERE username = ? LIMIT 1');
         $uStmt->execute([$username]);
         $usernameTaken = (bool)$uStmt->fetchColumn();
@@ -47,26 +52,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($emailTaken) {
             $err = 'Email already registered.';
         } else {
-            // Create user
             $hash = password_hash($password, PASSWORD_DEFAULT);
-            $cookieHash = generate_account_cookie_hash();
+            $cookieHash = generate_secure_token(32);
 
             try {
-                $ins = $pdo->prepare('
-                    INSERT INTO users (username, email, password_hash, sibux, tixs, account_cookie_hash)
-                    VALUES (?, ?, ?, 0, 0, ?)
-                ');
+                $ins = $pdo->prepare(
+                    'INSERT INTO users (username, email, password_hash, sibux, tixs, account_cookie_hash) VALUES (?, ?, ?, 0, 0, ?)'
+                );
                 $ins->execute([$username, $email, $hash, $cookieHash]);
 
-                session_regenerate_id(true);
-                $_SESSION['uid'] = (int)$pdo->lastInsertId();
-                set_account_cookie($cookieHash);
-                redirect('home.php');
+                $newUserId = (int)$pdo->lastInsertId();
+                login_user($pdo, $newUserId);
+                redirect('/home');
             } catch (PDOException $ex) {
-                // Handle race conditions with unique constraints gracefully
                 if ($ex->getCode() === '23000') {
                     $err = 'Username or email already in use.';
                 } else {
+                    error_log('Signup error: ' . $ex->getMessage());
                     $err = 'An unexpected error occurred. Please try again.';
                 }
             }
