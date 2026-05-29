@@ -189,6 +189,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
   <meta charset="utf-8">
   <title><?= h($profile['username']) ?> · Profile · SKIBLOX</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
   <link href="/styles.css" rel="stylesheet">
   <style>
     body { background:#000; color:#fff; margin:0; }
@@ -257,6 +258,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 <body>
 
   <div class="page">
+    <div id="profileMeta" data-username="<?= h($profile['username']) ?>" data-is-owner="<?= $isOwner ? '1' : '0' ?>"></div>
     <div class="name"><?= h($profile['username']) ?></div>
     <div class="meta">
       <div class="row">
@@ -302,76 +304,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     </div>
   </div>
 
-  <script>
-    (function(){
-      const isOwner = <?= $isOwner ? 'true' : 'false' ?>;
-      if (!isOwner) return;
-
-      const editTrigger = document.getElementById('editTrigger');
-      const descView = document.getElementById('descView');
-      const descForm = document.getElementById('descForm');
-      const descInput = document.getElementById('descInput');
-      const saveBtn = document.getElementById('saveBtn');
-      const cancelBtn = document.getElementById('cancelBtn');
-      const descMsg = document.getElementById('descMsg');
-
-      function showForm() {
-        descView.style.display = 'none';
-        descForm.style.display = 'block';
-        descMsg.style.display = 'none';
-        descInput.focus();
-      }
-      function hideForm() {
-        descForm.style.display = 'none';
-        descView.style.display = 'block';
-        descMsg.style.display = 'none';
-      }
-
-      editTrigger.addEventListener('click', showForm);
-      cancelBtn.addEventListener('click', hideForm);
-
-      saveBtn.addEventListener('click', function(){
-        const val = descInput.value;
-        saveBtn.disabled = true;
-        descMsg.style.display = 'none';
-
-        const fd = new FormData();
-        fd.append('action', 'update_description');
-        fd.append('description', val);
-        fd.append('csrf_token', '<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>');
-
-        fetch(location.pathname + '?u=' + encodeURIComponent('<?= rawurlencode($profile['username']) ?>'), {
-          method: 'POST',
-          body: fd,
-          credentials: 'same-origin',
-          headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        }).then(async res => {
-          saveBtn.disabled = false;
-          const text = await res.text();
-          let json = null;
-          try { json = JSON.parse(text); } catch(e) { /* not JSON */ }
-          if (!res.ok) {
-            descMsg.style.display = 'block';
-            descMsg.textContent = (json && json.error) ? json.error : ('Server error: ' + res.status + ' ' + text.slice(0,200));
-            return;
-          }
-          if (!json || !json.ok) {
-            descMsg.style.display = 'block';
-            descMsg.textContent = (json && json.error) ? json.error : 'Update failed.';
-            return;
-          }
-          descView.textContent = json.description || '';
-          hideForm();
-          descMsg.style.display = 'block';
-          descMsg.textContent = 'Updated.';
-          setTimeout(()=> descMsg.style.display = 'none', 2500);
-        }).catch(err => {
-          saveBtn.disabled = false;
-          descMsg.style.display = 'block';
-          descMsg.textContent = 'Network error: ' + (err && err.message ? err.message : 'unknown');
-        });
-      });
-    })();
-  </script>
+  <script src="/assets/app.js" defer></script>
 </body>
 </html>
