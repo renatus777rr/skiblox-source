@@ -135,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   // Censor words by replacing with ###
   if ($err === '') {
-    $filteredWords = ['fart', 'noob', 'ugly', 'skid', 'nigga', 'fuck', 'bitch', 'retard', 'faggot'];
+    $filteredWords = ['fart', 'noob', 'ugly', 'skid', 'fuck', 'bitch'];
     foreach ($filteredWords as $badWord) {
       $pattern = '/' . preg_quote($badWord, '/') . '/i';
       $msg = preg_replace_callback($pattern, function($m) {
@@ -273,70 +273,7 @@ function h($s){ return htmlspecialchars($s, ENT_QUOTES, 'UTF-8'); }
     .error { color: #ff5d5d; font-weight: 600; margin: 10px 0; text-align:center; }
     .flash { color: #74ff8f; font-weight: 700; margin: 10px 0; text-align:center; }
   </style>
-  <script>
-    function fetchMessages() {
-      fetch('/get_chat_messages.php')
-        .then(res => res.json())
-        .then(data => {
-          const box = document.querySelector('.chat-box');
-          box.innerHTML = '';
-
-          for (const msg of data) {
-            const div = document.createElement('div');
-            div.className = 'msg';
-
-            const name = escapeHtml(msg.username || 'user');
-            const text = msg.message ? `'${escapeHtml(msg.message)}'` : '';
-            const meta = ` <span class="meta">(${formatDate(msg.created_at)})</span>`;
-
-            const head = document.createElement('div');
-            head.innerHTML = `(<strong>${name}</strong>)${text ? ': ' + text : ''}${meta}`;
-            div.appendChild(head);
-
-            // Attachment rendering
-            if (msg.file_path) {
-              if (Number(msg.is_image) === 1) {
-                const img = document.createElement('img');
-                img.className = 'chat-image';
-                img.src = msg.file_path; // relative URL like /uploads/chat/...
-                img.alt = msg.file_name || 'image';
-                div.appendChild(img);
-              } else {
-                const link = document.createElement('a');
-                link.className = 'chat-download';
-                link.href = msg.file_path;
-                const fname = msg.file_name ? escapeHtml(msg.file_name) : 'file';
-                link.textContent = `(${fname}) Download`;
-                link.setAttribute('download', msg.file_name || '');
-                link.rel = 'noopener';
-                link.target = '_blank';
-                div.appendChild(link);
-              }
-            }
-
-            box.appendChild(div);
-          }
-        })
-        .catch(() => {});
-    }
-
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text == null ? '' : String(text);
-      return div.innerHTML;
-    }
-
-    function formatDate(iso) {
-      const d = new Date((iso || '').replace(' ', 'T') + 'Z');
-      if (isNaN(d.getTime())) return iso || '';
-      return d.toLocaleString();
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      fetchMessages();
-      setInterval(fetchMessages, 3000);
-    });
-  </script>
+  <script src="/assets/app.js" defer></script>
 </head>
 <body>
   <?php include __DIR__ . '/topbar.php'; ?>
